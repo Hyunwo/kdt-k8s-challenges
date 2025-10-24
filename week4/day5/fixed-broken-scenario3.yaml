@@ -1,0 +1,232 @@
+# Week 4 Day 5 Challenge 1: 시나리오 3 - Staging/Development 환경의 과도한 복제본
+# 의도적 오류: 비프로덕션 환경이 Production과 동일한 복제본 수
+
+---
+# Staging 환경 - 의도적 오류: Production과 동일한 복제본 수
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend
+  namespace: staging
+  labels:
+    app: frontend
+    tier: frontend
+    cost-center: CC-1002
+spec:
+  replicas: 2  # 의도적 오류: Production과 동일
+  selector:
+    matchLabels:
+      app: frontend
+  template:
+    metadata:
+      labels:
+        app: frontend
+        tier: frontend
+    spec:
+      containers:
+      - name: frontend
+        image: nginx:alpine
+        ports:
+        - containerPort: 80
+        resources:
+          requests:
+            cpu: 100m
+            memory: 128Mi
+          limits:
+            cpu: 500m
+            memory: 512Mi
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: user-service
+  namespace: staging
+  labels:
+    app: user-service
+    tier: backend
+    cost-center: CC-1002
+spec:
+  replicas: 2  # 의도적 오류: Production과 동일
+  selector:
+    matchLabels:
+      app: user-service
+  template:
+    metadata:
+      labels:
+        app: user-service
+        tier: backend
+    spec:
+      containers:
+      - name: user-service
+        image: nginx:alpine
+        ports:
+        - containerPort: 8080
+        resources:
+          requests:
+            cpu: 100m
+            memory: 128Mi
+          limits:
+            cpu: 500m
+            memory: 512Mi
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: product-service
+  namespace: staging
+  labels:
+    app: product-service
+    tier: backend
+    cost-center: CC-1002
+spec:
+  replicas: 2  # 의도적 오류: Production과 동일
+  selector:
+    matchLabels:
+      app: product-service
+  template:
+    metadata:
+      labels:
+        app: product-service
+        tier: backend
+    spec:
+      containers:
+      - name: product-service
+        image: nginx:alpine
+        ports:
+        - containerPort: 8080
+        resources:
+          requests:
+            cpu: 100m
+            memory: 128Mi
+          limits:
+            cpu: 500m
+            memory: 512Mi
+
+---
+# Staging HPA - 의도적 오류: 주석 처리됨
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: frontend-hpa
+  namespace: staging
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: frontend
+  minReplicas: 1
+  maxReplicas: 5
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
+---
+
+# Development 환경 - 의도적 오류: 불필요한 다중 복제본
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend
+  namespace: development
+  labels:
+    app: frontend
+    tier: frontend
+    cost-center: CC-1003
+spec:
+  replicas: 1  # 의도적 오류: 불필요한 복제본
+  selector:
+    matchLabels:
+      app: frontend
+  template:
+    metadata:
+      labels:
+        app: frontend
+        tier: frontend
+    spec:
+      containers:
+      - name: frontend
+        image: nginx:alpine
+        ports:
+        - containerPort: 80
+        resources:
+          requests:
+            cpu: 50m
+            memory: 64Mi
+          limits:
+            cpu: 200m
+            memory: 256Mi
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: user-service
+  namespace: development
+  labels:
+    app: user-service
+    tier: backend
+    cost-center: CC-1003
+spec:
+  replicas: 1  # 의도적 오류: 불필요한 복제본
+  selector:
+    matchLabels:
+      app: user-service
+  template:
+    metadata:
+      labels:
+        app: user-service
+        tier: backend
+    spec:
+      containers:
+      - name: user-service
+        image: nginx:alpine
+        ports:
+        - containerPort: 8080
+        resources:
+          requests:
+            cpu: 50m
+            memory: 64Mi
+          limits:
+            cpu: 200m
+            memory: 256Mi
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: product-service
+  namespace: development
+  labels:
+    app: product-service
+    tier: backend
+    cost-center: CC-1003
+spec:
+  replicas: 1  # 의도적 오류: 불필요한 복제본
+  selector:
+    matchLabels:
+      app: product-service
+  template:
+    metadata:
+      labels:
+        app: product-service
+        tier: backend
+    spec:
+      containers:
+      - name: product-service
+        image: nginx:alpine
+        ports:
+        - containerPort: 8080
+        resources:
+          requests:
+            cpu: 50m
+            memory: 64Mi
+          limits:
+            cpu: 200m
+            memory: 256Mi
+
+

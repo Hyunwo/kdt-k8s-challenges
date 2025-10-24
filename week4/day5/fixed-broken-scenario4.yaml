@@ -1,0 +1,175 @@
+# Week 4 Day 5 Challenge 1: 시나리오 4 - 리소스 제한 누락으로 인한 노드 과부하
+# 의도적 오류: requests만 설정하고 limits 누락
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: analytics-service
+  namespace: production
+  labels:
+    app: analytics-service
+    tier: backend
+    cost-center: CC-1001
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: analytics-service
+  template:
+    metadata:
+      labels:
+        app: analytics-service
+        tier: backend
+    spec:
+      containers:
+      - name: analytics-service
+        image: nginx:alpine
+        ports:
+        - containerPort: 8080
+        resources:
+          requests:
+            cpu: 200m
+            memory: 256Mi
+          limits:       # 의도적 오류: limits 누락
+            cpu: 400m
+            memory: 512Mi
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: notification-service
+  namespace: production
+  labels:
+    app: notification-service
+    tier: backend
+    cost-center: CC-1001
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: notification-service
+  template:
+    metadata:
+      labels:
+        app: notification-service
+        tier: backend
+    spec:
+      containers:
+      - name: notification-service
+        image: nginx:alpine
+        ports:
+        - containerPort: 8080
+        resources:
+          requests:
+            cpu: 150m
+            memory: 192Mi
+          limits:       # 의도적 오류: limits 누락
+            cpu: 300m
+            memory: 384Mi
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: search-service
+  namespace: production
+  labels:
+    app: search-service
+    tier: backend
+    cost-center: CC-1001
+spec:
+  replicas: 4
+  selector:
+    matchLabels:
+      app: search-service
+  template:
+    metadata:
+      labels:
+        app: search-service
+        tier: backend
+    spec:
+      containers:
+      - name: search-service
+        image: nginx:alpine
+        ports:
+        - containerPort: 8080
+        resources:
+          requests:
+            cpu: 300m
+            memory: 384Mi
+          limits:       # 의도적 오류: limits 누락
+            cpu: 600m
+            memory: 768Mi
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: recommendation-service
+  namespace: production
+  labels:
+    app: recommendation-service
+    tier: backend
+    cost-center: CC-1001
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: recommendation-service
+  template:
+    metadata:
+      labels:
+        app: recommendation-service
+        tier: backend
+    spec:
+      containers:
+      - name: recommendation-service
+        image: nginx:alpine
+        ports:
+        - containerPort: 8080
+        resources:
+          requests:
+            cpu: 250m
+            memory: 320Mi
+          limits:       # 의도적 오류: limits 누락
+            cpu: 500m
+            memory: 640Mi
+          
+
+---
+# Staging 환경 - 일부 서비스도 limits 누락
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: analytics-service
+  namespace: staging
+  labels:
+    app: analytics-service
+    tier: backend
+    cost-center: CC-1002
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: analytics-service
+  template:
+    metadata:
+      labels:
+        app: analytics-service
+        tier: backend
+    spec:
+      containers:
+      - name: analytics-service
+        image: nginx:alpine
+        ports:
+        - containerPort: 8080
+        resources:
+          requests:
+            cpu: 100m
+            memory: 128Mi
+          limits:            # 의도적 오류: limits 누락
+            cpu: 200m
+            memory: 256Mi
+         
