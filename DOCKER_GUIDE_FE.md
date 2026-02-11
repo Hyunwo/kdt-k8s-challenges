@@ -11,9 +11,23 @@
 
 ---
 
-## 사전 작업 (필수)
+## 사전 준비
 
-Dockerfile 사용 전, `next.config.ts`에 `output: 'standalone'` 설정이 필요합니다:
+### 1. Docker Desktop 설치
+
+Docker가 설치되어 있어야 합니다:
+- [Docker Desktop 다운로드](https://www.docker.com/products/docker-desktop)
+- 설치 후 **Docker Desktop을 실행**해주세요 (트레이에 고래 아이콘이 보이면 실행 중)
+
+확인 방법:
+```bash
+docker --version
+# Docker version 28.x.x 같은 출력이 나오면 정상
+```
+
+### 2. next.config.ts 설정
+
+`next.config.ts`에 `output: 'standalone'` 설정이 필요합니다:
 
 ```ts
 const nextConfig: NextConfig = {
@@ -27,6 +41,33 @@ const nextConfig: NextConfig = {
 - 전체 `node_modules`(수백MB)를 이미지에 넣을 필요가 없어 **이미지 크기가 대폭 감소**합니다
 - 로컬 개발(`npm run dev`)에는 영향 없습니다
 - **이 설정이 없으면 Docker 빌드가 실패합니다**
+
+---
+
+## 프론트팀이 해야 할 것
+
+Dockerfile이 정상적으로 빌드되는지 확인하는 것이 목적입니다.
+**실제 배포는 인프라(클라우드)팀에서 진행합니다.**
+
+```bash
+# 1. 이미지 빌드
+docker build -t popcon-frontend .
+
+# 2. 컨테이너 실행
+docker run --name popcon-frontend -p 3000:3000 popcon-frontend
+
+# 3. 브라우저에서 확인
+# http://localhost:3000 접속 → 페이지가 보이면 성공
+
+# 4. 종료 (Ctrl+C 또는 아래 명령어)
+docker stop popcon-frontend
+
+# 5. 컨테이너 정리
+docker rm popcon-frontend
+```
+
+> 백엔드 API를 연결할 필요 없습니다. Dockerfile이 빌드되고 페이지가 뜨는지만 확인하면 됩니다.
+> API 주소 연결 등 실제 배포 환경 설정은 인프라팀에서 처리합니다.
 
 ---
 
@@ -92,7 +133,7 @@ RUN npm run build
 ```
 
 - deps 단계에서 만든 `node_modules`를 가져와서 빌드
-- `NEXT_PUBLIC_API_URL`: 빌드 시 백엔드 API 주소를 코드에 인라인 (아래 환경변수 섹션 참고)
+- `NEXT_PUBLIC_API_URL`: 백엔드 API 주소를 빌드 시 코드에 삽입하는 변수 (아래 환경변수 섹션 참고)
 
 ### Stage 3 - 실행 (runner)
 
@@ -116,50 +157,22 @@ CMD ["node", "server.js"]
 
 ---
 
-## 빌드 & 실행 방법
+## 환경변수 (NEXT_PUBLIC_*)
 
-```bash
-# 이미지 빌드
-docker build -t popcon-frontend .
+| 변수명 | 용도 | 누가 설정? |
+|--------|------|-----------|
+| `NEXT_PUBLIC_API_URL` | 백엔드 API 주소 | **인프라팀** (배포 시 주입) |
 
-# 환경변수와 함께 빌드 (백엔드 API 주소 주입)
-docker build --build-arg NEXT_PUBLIC_API_URL=https://api.popcon.com -t popcon-frontend .
+- 로컬 테스트 시에는 이 값 없이 빌드해도 됩니다 (`docker build -t popcon-frontend .`)
+- 실제 배포 시에는 인프라팀이 백엔드 API 주소를 넣어서 빌드합니다
+- `NEXT_PUBLIC_` 접두사 변수는 빌드 시 JavaScript에 삽입되어 **브라우저에서 접근 가능**합니다
 
-# 컨테이너 실행
-docker run -p 3000:3000 popcon-frontend
-
-# 백그라운드 실행
-docker run -d -p 3000:3000 popcon-frontend
-
-# 실행 확인 - 브라우저에서 http://localhost:3000 접속
-
-# 컨테이너 종료
-docker stop popcon-frontend
-```
-
----
-
-## 환경변수
-
-### 빌드 시 주입 (NEXT_PUBLIC_*)
-
-| 변수명 | 용도 | 주입 방법 |
-|--------|------|----------|
-| `NEXT_PUBLIC_API_URL` | 백엔드 API 주소 | `docker build --build-arg NEXT_PUBLIC_API_URL=값` |
-
-`NEXT_PUBLIC_` 접두사 변수는 빌드 시 JavaScript에 인라인됩니다.
 새로운 `NEXT_PUBLIC_` 변수가 필요하면 Dockerfile의 builder 단계에 아래를 추가해주세요:
 
 ```dockerfile
 ARG NEXT_PUBLIC_새변수명
 ENV NEXT_PUBLIC_새변수명=$NEXT_PUBLIC_새변수명
 ```
-
-### 실행 시 주입 (서버 전용)
-
-| 변수명 | 용도 | 주입 방법 |
-|--------|------|----------|
-| 서버 전용 변수 | API 시크릿 등 | `docker run -e API_SECRET=값` |
 
 > `NEXT_PUBLIC_` 변수는 브라우저에 노출되므로 **비밀 정보를 절대 넣지 마세요**.
 
@@ -181,6 +194,38 @@ ENV NEXT_PUBLIC_새변수명=$NEXT_PUBLIC_새변수명
 
 | 증상 | 원인 | 해결 |
 |------|------|------|
+| `docker: command not found` | Docker 미설치 | Docker Desktop 설치 및 실행 |
+| `Cannot connect to the Docker daemon` | Docker Desktop 미실행 | Docker Desktop 실행 (트레이 고래 아이콘 확인) |
 | `.next/standalone: not found` | standalone 설정 누락 | `next.config.ts`에 `output: 'standalone'` 추가 |
 | `npm ci` 실패 | lock 파일 불일치 | `npm install` 후 `package-lock.json` 커밋 |
-| `NEXT_PUBLIC_` 값이 undefined | 빌드 시 ARG 미전달 | `--build-arg` 로 값 전달 |
+| 포트 충돌 (`port is already allocated`) | 3000 포트 사용 중 | `docker ps`로 확인 후 기존 컨테이너 종료 |
+
+---
+
+## 자주 쓰는 명령어
+
+```bash
+# 이미지 빌드
+docker build -t popcon-frontend .
+
+# 실행
+docker run --name popcon-frontend -p 3000:3000 popcon-frontend
+
+# 백그라운드 실행
+docker run -d --name popcon-frontend -p 3000:3000 popcon-frontend
+
+# 컨테이너 상태 확인
+docker ps
+
+# 로그 확인
+docker logs popcon-frontend
+
+# 종료
+docker stop popcon-frontend
+
+# 컨테이너 삭제 (종료 후)
+docker rm popcon-frontend
+
+# 이미지 삭제
+docker rmi popcon-frontend
+```
