@@ -62,7 +62,10 @@ terraform-infra/
 ├── modules/
 │   ├── vpc/               # VPC, 서브넷, IGW
 │   ├── ecr/               # Docker 이미지 저장소
-│   └── ssm-parameters/    # 환경변수 저장소
+│   ├── ec2/               # EC2 인스턴스
+│   ├── ssm-parameters/    # 환경변수 저장소
+│   ├── org-iam/           # 조직 IAM
+│   └── service-iam/       # 서비스 IAM
 └── env/dev/
     └── main.tf            # 위 모듈들을 호출
 ```
@@ -84,6 +87,7 @@ terraform-infra/
 | VPC | 네트워크 격리 |
 | Public/Private Subnet | EC2, RDS 배치 |
 | Internet Gateway | 외부 통신 |
+| EC2 | Docker 컨테이너 실행 (SSM 접속) |
 | ECR | Docker 이미지 저장소 |
 | SSM Parameter Store | 환경변수 (DB 비밀번호 등) |
 
