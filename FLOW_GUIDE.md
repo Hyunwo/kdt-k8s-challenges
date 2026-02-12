@@ -36,7 +36,7 @@ Docker 이미지 빌드              │
 ECR에 이미지 push ─────────────────────────────────────→ ECR에 저장
                                 │                              │
                                 ▼                              │
-                           EC2에 SSH 접속                      │
+                           EC2에 SSM 접속                      │
                            git pull (gitops)                   │
                            ./deploy.sh ───────────────→ SSM에서 환경변수 가져옴
                                 │                        ECR에서 이미지 pull
@@ -205,8 +205,8 @@ gitops/
 #### 배포 명령어
 
 ```bash
-# EC2에 SSH 접속
-ssh -i key.pem ubuntu@<EC2_IP>
+# EC2에 SSM 접속 (SSH 대신 SSM Session Manager 사용)
+aws ssm start-session --target <instance-id>
 
 # 최초
 git clone https://github.com/kt-cloud-TECHUP-T1/gitops.git
